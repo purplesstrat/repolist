@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Repo Browser with Lua Export</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    ul { list-style: none; padding-left: 20px; }
+    li { margin: 5px 0; }
+    a { text-decoration: none; color: #007acc; }
+    a:hover { text-decoration: underline; }
+    pre { background:#111; color:#0f0; padding:10px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <h1>📂 Repo Browser</h1>
+  <div id="output">Loading...</div>
+
+  <script>
+    const user   = "octocat";     // your username
+    const repo   = "Hello-World"; // your repo
+    const branch = "main";        // branch
+    const params = new URLSearchParams(window.location.search);
+    const format = params.get("format"); // ?format=lua
+    const path   = params.get("path") || ""; // ?path=subfolder
+
+    // Recursive fetcher
+    async function fetchDir(path) {
+      const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}?ref=${branch}`);
+      return res.json();
+    }
+
+    async function generateLua(path, table) {
+      const files = await fetchDir(path);
+      for (const file of files) {
+        if (file.type === "file" && file.name.endsWith(".lua")) {
+          table.push(`  ["${file.path}"] = "https://raw.githubusercontent.com/${user}/${repo}/${branch}/${file.path}",`);
+        } else if (file.type === "dir") {
+          await generateLua(file.path, table); // recurse
+        }
+      }
+    }
+
+    async function main() {
+      if (format === "lua") {
+        let lua = "return {\n\n";
+        const table = [];
+        await generateLua(path, table);
+        lua += table.join("\n") + "\n\n}";
+        document.body.innerHTML = `<pre>${lua}</pre>`;
+      } else {
+        const files = await fetchDir(path);
+        const container = document.getElementById("output");
+        container.innerHTML = "<ul></ul>";
+        const ul = container.querySelector("ul");
+
+        files.forEach(file => {
+          const li = document.createElement("li");
+          if (file.type === "file") {
+            const rawUrl = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${file.path}`;
+            const customRaw = `./raw.html?file=${encodeURIComponent(file.path)}`;
+            li.innerHTML = `📄 <strong>${file.name}</strong> — 
+              <a href="${rawUrl}" target="_blank">Raw</a> | 
+              <a href="${customRaw}" target="_blank">/raw</a>`;
+          } else if (file.type === "dir") {
+            const link = `?path=${file.path}`;
+            li.innerHTML = `📂 <a href="${link}">${file.name}</a>`;
+          }
+          ul.appendChild(li);
+        });
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
