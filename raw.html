@@ -4,48 +4,33 @@
   <meta charset="UTF-8">
   <title>Raw File Viewer</title>
   <style>
-    body {
-      background: #111;
-      color: #0f0;
-      font-family: monospace;
-      padding: 20px;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-    a { color: #0ff; }
+    body { background: #111; color: #0f0; font-family: monospace; padding: 20px; white-space: pre-wrap; }
   </style>
 </head>
 <body>
-  <div id="content">Loading...</div>
+  <pre id="content">Loading...</pre>
 
   <script>
-    const user   = "octocat";     // your username
-    const repo   = "Hello-World"; // your repo
-    const branch = "main";        // branch
-
     const params = new URLSearchParams(window.location.search);
-    const file = params.get("file");
+    const user   = params.get("user")   || "octocat";
+    const repo   = params.get("repo")   || "Hello-World";
+    const branch = params.get("branch") || "main";
+    const file   = params.get("file");
 
     async function loadFile() {
       if (!file) {
         document.getElementById("content").innerText = "❌ No file specified.";
         return;
       }
-
       const rawUrl = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${file}`;
       try {
         const res = await fetch(rawUrl);
-        if (!res.ok) throw new Error("Failed to fetch file");
-
-        const text = await res.text();
-
-        // display file contents
-        document.getElementById("content").innerText = text;
+        if (!res.ok) throw new Error("File not found");
+        document.getElementById("content").innerText = await res.text();
       } catch (err) {
-        document.getElementById("content").innerText = "❌ Error: " + err.message;
+        document.getElementById("content").innerText = "❌ " + err.message;
       }
     }
-
     loadFile();
   </script>
 </body>
