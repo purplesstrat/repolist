@@ -2,36 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Raw File Viewer</title>
-  <style>
-    body { background: #111; color: #0f0; font-family: monospace; padding: 20px; white-space: pre-wrap; }
-  </style>
+  <title>Raw File</title>
 </head>
 <body>
-  <pre id="content">Loading...</pre>
+<script>
+const params = new URLSearchParams(window.location.search);
+const user = params.get("user") || "octocat";
+const repo = params.get("repo") || "Hello-World";
+const branch = params.get("branch") || "main";
+const file = params.get("file");
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const user   = params.get("user")   || "octocat";
-    const repo   = params.get("repo")   || "Hello-World";
-    const branch = params.get("branch") || "main";
-    const file   = params.get("file");
-
-    async function loadFile() {
-      if (!file) {
-        document.getElementById("content").innerText = "❌ No file specified.";
-        return;
-      }
-      const rawUrl = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${file}`;
-      try {
-        const res = await fetch(rawUrl);
-        if (!res.ok) throw new Error("File not found");
-        document.getElementById("content").innerText = await res.text();
-      } catch (err) {
-        document.getElementById("content").innerText = "❌ " + err.message;
-      }
-    }
-    loadFile();
-  </script>
+if (file) {
+    fetch(`https://raw.githubusercontent.com/${user}/${repo}/${branch}/${file}`)
+        .then(res => res.text())
+        .then(text => {
+            document.body.innerText = text; // ONLY the file content
+        })
+        .catch(() => document.body.innerText = ""); // show nothing on error
+} else {
+    document.body.innerText = ""; // nothing if no file specified
+}
+</script>
 </body>
 </html>
